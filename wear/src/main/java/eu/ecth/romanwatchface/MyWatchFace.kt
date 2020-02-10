@@ -35,8 +35,6 @@ private const val HOUR_STROKE_WIDTH = 5f
 private const val MINUTE_STROKE_WIDTH = 3f
 private const val SECOND_TICK_STROKE_WIDTH = 2f
 
-private const val CENTER_GAP_AND_CIRCLE_RADIUS = 150f
-
 private const val SHADOW_RADIUS = 6f
 private const val ROMAN_RANGE = 20f
 private const val ROMAN_HEIGHT = 48f
@@ -94,7 +92,7 @@ class MyWatchFace : CanvasWatchFaceService() {
         private lateinit var mHourPaint: Paint
         private lateinit var mMinutePaint: Paint
         private lateinit var mSecondPaint: Paint
-        private lateinit var mTickAndCirclePaint: Paint
+        private lateinit var mCirclePaint: Paint
         private lateinit var timePaint: Paint
         private lateinit var datePaint: Paint
         private lateinit var dayPaint: Paint
@@ -197,7 +195,7 @@ class MyWatchFace : CanvasWatchFaceService() {
                 )
             }
 
-            mTickAndCirclePaint = Paint().apply {
+            mCirclePaint = Paint().apply {
                 color = mWatchHandColor
                 strokeWidth = SECOND_TICK_STROKE_WIDTH
                 isAntiAlias = true
@@ -206,10 +204,7 @@ class MyWatchFace : CanvasWatchFaceService() {
                     SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
                 )
             }
-
-
-
-
+            
             timePaint = Paint().apply {
                 color = Color.WHITE
                 typeface = Typeface.SANS_SERIF
@@ -287,17 +282,17 @@ class MyWatchFace : CanvasWatchFaceService() {
                 mHourPaint.color = Color.WHITE
                 mMinutePaint.color = Color.WHITE
                 mSecondPaint.color = Color.WHITE
-                mTickAndCirclePaint.color = Color.WHITE
+                mCirclePaint.color = Color.WHITE
 
                 mHourPaint.isAntiAlias = false
                 mMinutePaint.isAntiAlias = false
                 mSecondPaint.isAntiAlias = false
-                mTickAndCirclePaint.isAntiAlias = false
+                mCirclePaint.isAntiAlias = false
 
                 mHourPaint.clearShadowLayer()
                 mMinutePaint.clearShadowLayer()
                 mSecondPaint.clearShadowLayer()
-                mTickAndCirclePaint.clearShadowLayer()
+                mCirclePaint.clearShadowLayer()
                 timePaint.clearShadowLayer()
                 dayPaint.clearShadowLayer()
                 datePaint.clearShadowLayer()
@@ -311,12 +306,12 @@ class MyWatchFace : CanvasWatchFaceService() {
                 mHourPaint.color = mWatchHandColor
                 mMinutePaint.color = mWatchHandColor
                 mSecondPaint.color = mWatchHandHighlightColor
-                mTickAndCirclePaint.color = mWatchHandColor
+                mCirclePaint.color = mWatchHandColor
 
                 mHourPaint.isAntiAlias = true
                 mMinutePaint.isAntiAlias = true
                 mSecondPaint.isAntiAlias = true
-                mTickAndCirclePaint.isAntiAlias = true
+                mCirclePaint.isAntiAlias = true
 
                 mHourPaint.setShadowLayer(
                     SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
@@ -327,7 +322,7 @@ class MyWatchFace : CanvasWatchFaceService() {
                 mSecondPaint.setShadowLayer(
                     SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
                 )
-                mTickAndCirclePaint.setShadowLayer(
+                mCirclePaint.setShadowLayer(
                     SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
                 )
                 timePaint.setShadowLayer(
@@ -373,9 +368,9 @@ class MyWatchFace : CanvasWatchFaceService() {
             /*
              * Calculate lengths of different hands based on watch screen size.
              */
-            mSecondHandLength = (mCenterX * 0.9).toFloat() // (mCenterX * 0.875).toFloat()
-            sMinuteHandLength = (mCenterX * 0.875).toFloat() // (mCenterX * 0.75).toFloat()
-            sHourHandLength = (mCenterX * 0.85).toFloat() // (mCenterX * 0.5).toFloat()
+            mSecondHandLength = (mCenterX * 0.925).toFloat()
+            sMinuteHandLength = (mCenterX * 0.9).toFloat()
+            sHourHandLength = (mCenterX * 0.85).toFloat()
 
             /* Scale loaded background image (more efficient) if surface dimensions change. */
             val scale = width.toFloat() / mBackgroundBitmap.width.toFloat()
@@ -517,7 +512,7 @@ class MyWatchFace : CanvasWatchFaceService() {
             canvas.rotate(hoursRotation, mCenterX, mCenterY)
             canvas.drawLine(
                 mCenterX,
-                mCenterY - CENTER_GAP_AND_CIRCLE_RADIUS,
+                ROMAN_HEIGHT * 2,
                 mCenterX,
                 mCenterY - sHourHandLength,
                 mHourPaint
@@ -526,7 +521,7 @@ class MyWatchFace : CanvasWatchFaceService() {
             canvas.rotate(minutesRotation - hoursRotation, mCenterX, mCenterY)
             canvas.drawLine(
                 mCenterX,
-                mCenterY - CENTER_GAP_AND_CIRCLE_RADIUS,
+                ROMAN_HEIGHT * 2,
                 mCenterX,
                 mCenterY - sMinuteHandLength,
                 mMinutePaint
@@ -540,7 +535,7 @@ class MyWatchFace : CanvasWatchFaceService() {
                 canvas.rotate(secondsRotation - minutesRotation, mCenterX, mCenterY)
                 canvas.drawLine(
                     mCenterX,
-                    mCenterY - CENTER_GAP_AND_CIRCLE_RADIUS,
+                    ROMAN_HEIGHT * 2,
                     mCenterX,
                     mCenterY - mSecondHandLength,
                     mSecondPaint
@@ -551,8 +546,8 @@ class MyWatchFace : CanvasWatchFaceService() {
             canvas.drawCircle(
                 mCenterX,
                 mCenterY,
-                CENTER_GAP_AND_CIRCLE_RADIUS,
-                mTickAndCirclePaint
+                mCenterY - ROMAN_HEIGHT,
+                mCirclePaint
             )
 
             /* Restore the canvas' original orientation. */
