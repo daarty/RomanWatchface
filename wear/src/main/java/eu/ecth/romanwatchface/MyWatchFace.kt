@@ -39,6 +39,7 @@ private const val CENTER_GAP_AND_CIRCLE_RADIUS = 150f
 
 private const val SHADOW_RADIUS = 6f
 private const val ROMAN_RANGE = 20f
+private const val ROMAN_HEIGHT = 48f
 
 /**
  * Analog watch face with a ticking second hand. In ambient mode, the second hand isn't
@@ -94,6 +95,10 @@ class MyWatchFace : CanvasWatchFaceService() {
         private lateinit var mMinutePaint: Paint
         private lateinit var mSecondPaint: Paint
         private lateinit var mTickAndCirclePaint: Paint
+        private lateinit var timePaint: Paint
+        private lateinit var datePaint: Paint
+        private lateinit var dayPaint: Paint
+        private lateinit var romanPaint: Paint
 
         private lateinit var mBackgroundPaint: Paint
         private lateinit var mBackgroundBitmap: Bitmap
@@ -108,12 +113,9 @@ class MyWatchFace : CanvasWatchFaceService() {
         private var time: String = ""
         private var date: String = ""
         private var day: String = ""
-        private val timePaint = Paint()
-        private val datePaint = Paint()
-        private val dayPaint = Paint()
-        private val romanPaint = Paint()
 
-        val romanNumbers = arrayListOf("I", "II", "III", "IIII", "V", "VI", "VII", "VIII", "XI", "X", "XI", "XII")
+        val romanNumbers =
+            arrayListOf("I", "II", "III", "IIII", "V", "VI", "VII", "VIII", "XI", "X", "XI", "XII")
 
         /* Handler to update the time once a second in interactive mode. */
         private val mUpdateTimeHandler = EngineHandler(this)
@@ -137,26 +139,6 @@ class MyWatchFace : CanvasWatchFaceService() {
             )
 
             mCalendar = Calendar.getInstance()
-
-            timePaint.color = Color.WHITE
-            timePaint.typeface = Typeface.SANS_SERIF
-            timePaint.textSize = 80f
-            timePaint.isAntiAlias = true
-
-            dayPaint.color = Color.WHITE
-            dayPaint.typeface = Typeface.SANS_SERIF
-            dayPaint.textSize = 36f
-            dayPaint.isAntiAlias = true
-
-            datePaint.color = Color.WHITE
-            datePaint.typeface = Typeface.SANS_SERIF
-            datePaint.textSize = 32f
-            datePaint.isAntiAlias = true
-
-            romanPaint.color = Color.WHITE
-            romanPaint.typeface = Typeface.SERIF
-            romanPaint.textSize = 48f
-            romanPaint.isAntiAlias = true
 
             initializeBackground()
             initializeWatchFace()
@@ -224,6 +206,49 @@ class MyWatchFace : CanvasWatchFaceService() {
                     SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
                 )
             }
+
+
+
+
+            timePaint = Paint().apply {
+                color = Color.WHITE
+                typeface = Typeface.SANS_SERIF
+                textSize = 80f
+                isAntiAlias = true
+                setShadowLayer(
+                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                )
+            }
+
+            dayPaint = Paint().apply {
+                color = Color.WHITE
+                typeface = Typeface.SANS_SERIF
+                textSize = 36f
+                isAntiAlias = true
+                setShadowLayer(
+                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                )
+            }
+
+            datePaint = Paint().apply {
+                color = Color.WHITE
+                typeface = Typeface.SANS_SERIF
+                textSize = 32f
+                isAntiAlias = true
+                setShadowLayer(
+                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                )
+            }
+
+            romanPaint = Paint().apply {
+                color = Color.WHITE
+                typeface = Typeface.SERIF
+                textSize = 48f
+                isAntiAlias = true
+                setShadowLayer(
+                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                )
+            }
         }
 
         override fun onDestroy() {
@@ -273,13 +298,15 @@ class MyWatchFace : CanvasWatchFaceService() {
                 mMinutePaint.clearShadowLayer()
                 mSecondPaint.clearShadowLayer()
                 mTickAndCirclePaint.clearShadowLayer()
+                timePaint.clearShadowLayer()
+                dayPaint.clearShadowLayer()
+                datePaint.clearShadowLayer()
+                romanPaint.clearShadowLayer()
 
                 timePaint.isAntiAlias = false
                 dayPaint.isAntiAlias = false
                 datePaint.isAntiAlias = false
                 romanPaint.isAntiAlias = false
-
-                // TODO clear shadow for roman numbers
             } else {
                 mHourPaint.color = mWatchHandColor
                 mMinutePaint.color = mWatchHandColor
@@ -303,13 +330,18 @@ class MyWatchFace : CanvasWatchFaceService() {
                 mTickAndCirclePaint.setShadowLayer(
                     SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
                 )
-
-                // TODO set shadow for roman numbers
-
-                timePaint.isAntiAlias = true
-                dayPaint.isAntiAlias = true
-                datePaint.isAntiAlias = true
-                romanPaint.isAntiAlias = true
+                timePaint.setShadowLayer(
+                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                )
+                dayPaint.setShadowLayer(
+                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                )
+                datePaint.setShadowLayer(
+                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                )
+                romanPaint.setShadowLayer(
+                    SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
+                )
             }
         }
 
@@ -344,7 +376,6 @@ class MyWatchFace : CanvasWatchFaceService() {
             mSecondHandLength = (mCenterX * 0.9).toFloat() // (mCenterX * 0.875).toFloat()
             sMinuteHandLength = (mCenterX * 0.875).toFloat() // (mCenterX * 0.75).toFloat()
             sHourHandLength = (mCenterX * 0.85).toFloat() // (mCenterX * 0.5).toFloat()
-
 
             /* Scale loaded background image (more efficient) if surface dimensions change. */
             val scale = width.toFloat() / mBackgroundBitmap.width.toFloat()
@@ -398,13 +429,13 @@ class MyWatchFace : CanvasWatchFaceService() {
                 WatchFaceService.TAP_TYPE_TOUCH_CANCEL -> {
                     // The user has started a different gesture or otherwise cancelled the tap.
                 }
-                WatchFaceService.TAP_TYPE_TAP -> {}
-                    // The user has completed the tap gesture.
-                    // TODO: Add code to handle the tap gesture.
+                WatchFaceService.TAP_TYPE_TAP -> {
+                }
+                // The user has completed the tap gesture.
+                // TODO: Add code to handle the tap gesture.
             }
             invalidate()
         }
-
 
         override fun onDraw(canvas: Canvas, bounds: Rect) {
             val now = System.currentTimeMillis()
@@ -444,15 +475,16 @@ class MyWatchFace : CanvasWatchFaceService() {
                 canvas.rotate(tickRot, mCenterX, mCenterY)
 
                 val number = romanNumbers[tickIndex]
-                val area = RectF(mCenterX-ROMAN_RANGE, 0f, mCenterX+ROMAN_RANGE, ROMAN_RANGE*2f)
+                val area =
+                    RectF(mCenterX - ROMAN_RANGE, 0f, mCenterX + ROMAN_RANGE, ROMAN_HEIGHT)
 
                 val bounds = RectF(area)
                 bounds.right = romanPaint.measureText(number, 0, number.length)
                 bounds.bottom = romanPaint.descent() - romanPaint.ascent()
-                bounds.left +=(area.width() - bounds.right) / 2f
-                bounds.top +=(area.height() - bounds.bottom) / 2f
+                bounds.left += (area.width() - bounds.right) / 2f
+                bounds.top += (area.height() - bounds.bottom) / 2f
 
-                canvas.drawText(number, bounds.left, bounds.top-romanPaint.ascent(), romanPaint)
+                canvas.drawText(number, bounds.left, bounds.top - romanPaint.ascent(), romanPaint)
             }
 
             /* Restore the canvas' original orientation. */
@@ -533,15 +565,20 @@ class MyWatchFace : CanvasWatchFaceService() {
         }
 
         private fun setText(canvas: Canvas, text: String, paint: Paint, verticalOffset: Float) {
-            val area = RectF(mCenterX-100, mCenterY-100+verticalOffset, mCenterX+100, mCenterY+100+verticalOffset)
+            val area = RectF(
+                mCenterX - 100,
+                mCenterY - 100 + verticalOffset,
+                mCenterX + 100,
+                mCenterY + 100 + verticalOffset
+            )
 
             val bounds = RectF(area)
             bounds.right = paint.measureText(text, 0, text.length)
             bounds.bottom = paint.descent() - paint.ascent()
-            bounds.left +=(area.width() - bounds.right) / 2f
-            bounds.top +=(area.height() - bounds.bottom) / 2f
+            bounds.left += (area.width() - bounds.right) / 2f
+            bounds.top += (area.height() - bounds.bottom) / 2f
 
-            canvas.drawText(text, bounds.left, bounds.top-paint.ascent(), paint)
+            canvas.drawText(text, bounds.left, bounds.top - paint.ascent(), paint)
         }
 
         override fun onVisibilityChanged(visible: Boolean) {
