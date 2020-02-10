@@ -4,15 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.ColorMatrix
-import android.graphics.ColorMatrixColorFilter
-import android.graphics.Paint
-import android.graphics.Rect
-import android.icu.text.DateFormatSymbols
+import android.graphics.*
 import android.icu.text.SimpleDateFormat
 import android.os.Bundle
 import android.os.Handler
@@ -46,6 +38,7 @@ private const val SECOND_TICK_STROKE_WIDTH = 2f
 private const val CENTER_GAP_AND_CIRCLE_RADIUS = 150f
 
 private const val SHADOW_RADIUS = 6f
+private const val ROMAN_RANGE = 20f
 
 /**
  * Analog watch face with a ticking second hand. In ambient mode, the second hand isn't
@@ -111,12 +104,16 @@ class MyWatchFace : CanvasWatchFaceService() {
         private var mBurnInProtection: Boolean = false
 
         /* Add digital time display and calendar */
+        private var currentDate = Date()
         private var time: String = ""
         private var date: String = ""
         private var day: String = ""
-//        private var timeView: TextView = TextView(applicationContext)
-//        private var dateView: TextView = TextView(applicationContext)
-//        private var dayView: TextView = TextView(applicationContext)
+        private val timePaint = Paint()
+        private val datePaint = Paint()
+        private val dayPaint = Paint()
+        private val romanPaint = Paint()
+
+        val romanNumbers = arrayListOf("I", "II", "III", "IIII", "V", "VI", "VII", "VIII", "XI", "X", "XI", "XII")
 
         /* Handler to update the time once a second in interactive mode. */
         private val mUpdateTimeHandler = EngineHandler(this)
@@ -131,7 +128,7 @@ class MyWatchFace : CanvasWatchFaceService() {
         override fun onCreate(holder: SurfaceHolder) {
             super.onCreate(holder)
 
-            setContentView(R.layout.activity_analog_complication_config)
+//            setContentView(R.layout.activity_analog_complication_config)
 
             setWatchFaceStyle(
                 WatchFaceStyle.Builder(this@MyWatchFace)
@@ -140,6 +137,26 @@ class MyWatchFace : CanvasWatchFaceService() {
             )
 
             mCalendar = Calendar.getInstance()
+
+            timePaint.color = Color.WHITE
+            timePaint.typeface = Typeface.SANS_SERIF
+            timePaint.textSize = 80f
+            timePaint.isAntiAlias = true
+
+            dayPaint.color = Color.WHITE
+            dayPaint.typeface = Typeface.SANS_SERIF
+            dayPaint.textSize = 36f
+            dayPaint.isAntiAlias = true
+
+            datePaint.color = Color.WHITE
+            datePaint.typeface = Typeface.SANS_SERIF
+            datePaint.textSize = 32f
+            datePaint.isAntiAlias = true
+
+            romanPaint.color = Color.WHITE
+            romanPaint.typeface = Typeface.SERIF
+            romanPaint.textSize = 48f
+            romanPaint.isAntiAlias = true
 
             initializeBackground()
             initializeWatchFace()
@@ -257,6 +274,12 @@ class MyWatchFace : CanvasWatchFaceService() {
                 mSecondPaint.clearShadowLayer()
                 mTickAndCirclePaint.clearShadowLayer()
 
+                timePaint.isAntiAlias = false
+                dayPaint.isAntiAlias = false
+                datePaint.isAntiAlias = false
+                romanPaint.isAntiAlias = false
+
+                // TODO clear shadow for roman numbers
             } else {
                 mHourPaint.color = mWatchHandColor
                 mMinutePaint.color = mWatchHandColor
@@ -281,6 +304,12 @@ class MyWatchFace : CanvasWatchFaceService() {
                     SHADOW_RADIUS, 0f, 0f, mWatchHandShadowColor
                 )
 
+                // TODO set shadow for roman numbers
+
+                timePaint.isAntiAlias = true
+                dayPaint.isAntiAlias = true
+                datePaint.isAntiAlias = true
+                romanPaint.isAntiAlias = true
             }
         }
 
@@ -348,6 +377,7 @@ class MyWatchFace : CanvasWatchFaceService() {
                 Bitmap.Config.ARGB_8888
             )
             val canvas = Canvas(mGrayBackgroundBitmap)
+
             val grayPaint = Paint()
             val colorMatrix = ColorMatrix()
             colorMatrix.setSaturation(0f)
@@ -368,11 +398,9 @@ class MyWatchFace : CanvasWatchFaceService() {
                 WatchFaceService.TAP_TYPE_TOUCH_CANCEL -> {
                     // The user has started a different gesture or otherwise cancelled the tap.
                 }
-                WatchFaceService.TAP_TYPE_TAP ->
+                WatchFaceService.TAP_TYPE_TAP -> {}
                     // The user has completed the tap gesture.
                     // TODO: Add code to handle the tap gesture.
-                    Toast.makeText(applicationContext, R.string.message, Toast.LENGTH_SHORT)
-                        .show()
             }
             invalidate()
         }
@@ -404,19 +432,31 @@ class MyWatchFace : CanvasWatchFaceService() {
              * cases where you want to allow users to select their own photos, this dynamically
              * creates them on top of the photo.
              */
-            val innerTickRadius = mCenterX - 10
-            val outerTickRadius = mCenterX
+
+            /*
+             * Save the canvas state before we can begin to rotate it.
+             */
+            canvas.save()
+
             for (tickIndex in 0..11) {
-                val tickRot = (tickIndex.toDouble() * Math.PI * 2.0 / 12).toFloat()
-                val innerX = Math.sin(tickRot.toDouble()).toFloat() * innerTickRadius
-                val innerY = (-Math.cos(tickRot.toDouble())).toFloat() * innerTickRadius
-                val outerX = Math.sin(tickRot.toDouble()).toFloat() * outerTickRadius
-                val outerY = (-Math.cos(tickRot.toDouble())).toFloat() * outerTickRadius
-                canvas.drawLine(
-                    mCenterX + innerX, mCenterY + innerY,
-                    mCenterX + outerX, mCenterY + outerY, mTickAndCirclePaint
-                )
+                val tickRot = 30f
+
+                canvas.rotate(tickRot, mCenterX, mCenterY)
+
+                val number = romanNumbers[tickIndex]
+                val area = RectF(mCenterX-ROMAN_RANGE, 0f, mCenterX+ROMAN_RANGE, ROMAN_RANGE*2f)
+
+                val bounds = RectF(area)
+                bounds.right = romanPaint.measureText(number, 0, number.length)
+                bounds.bottom = romanPaint.descent() - romanPaint.ascent()
+                bounds.left +=(area.width() - bounds.right) / 2f
+                bounds.top +=(area.height() - bounds.bottom) / 2f
+
+                canvas.drawText(number, bounds.left, bounds.top-romanPaint.ascent(), romanPaint)
             }
+
+            /* Restore the canvas' original orientation. */
+            canvas.restore()
 
             /*
              * These calculations reflect the rotation in degrees per unit of time, e.g.,
@@ -431,10 +471,11 @@ class MyWatchFace : CanvasWatchFaceService() {
             val hourHandOffset = mCalendar.get(Calendar.MINUTE) / 2f
             val hoursRotation = mCalendar.get(Calendar.HOUR) * 30 + hourHandOffset
 
-            val currentDate = Date()
-            time = SimpleDateFormat("HH:mm").format(currentDate) // "${mCalendar.get(Calendar.HOUR)}:${mCalendar.get(Calendar.MINUTE)}"
-            day = SimpleDateFormat("EEEE").format(currentDate) // "${Calendar.DAY_OF_WEEK mCalendar.get(Calendar.DAY_OF_WEEK)}"
-            date = SimpleDateFormat("d. MMMM yyyy").format(currentDate) // "${mCalendar.get(Calendar.MONTH)} ${mCalendar.get(Calendar.YEAR)}"
+            currentDate = Date()
+
+            time = SimpleDateFormat("HH:mm").format(currentDate)
+            day = SimpleDateFormat("EEEE").format(currentDate)
+            date = SimpleDateFormat("d. MMMM").format(currentDate)
 
             /*
              * Save the canvas state before we can begin to rotate it.
@@ -486,12 +527,21 @@ class MyWatchFace : CanvasWatchFaceService() {
             canvas.restore()
 
             /* Set digital clock and calendar */
-//            timeView.text = time
-//            canvas.draw
+            setText(canvas, time, timePaint, -20f)
+            setText(canvas, day, dayPaint, 30f)
+            setText(canvas, date, datePaint, 60f)
+        }
 
-            canvas.drawText(time, 100f, 100f, Paint(Color.WHITE))
-            canvas.drawText(day, 150f, 150f, Paint(Color.WHITE))
-            canvas.drawText(date, 200f, 200f, Paint(Color.WHITE))
+        private fun setText(canvas: Canvas, text: String, paint: Paint, verticalOffset: Float) {
+            val area = RectF(mCenterX-100, mCenterY-100+verticalOffset, mCenterX+100, mCenterY+100+verticalOffset)
+
+            val bounds = RectF(area)
+            bounds.right = paint.measureText(text, 0, text.length)
+            bounds.bottom = paint.descent() - paint.ascent()
+            bounds.left +=(area.width() - bounds.right) / 2f
+            bounds.top +=(area.height() - bounds.bottom) / 2f
+
+            canvas.drawText(text, bounds.left, bounds.top-paint.ascent(), paint)
         }
 
         override fun onVisibilityChanged(visible: Boolean) {
